@@ -1,0 +1,15 @@
+version: "3.9"
+services:
+  sftp_api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/home/sftp_api/app
+      - bash_history_volume:/home/sftp_api/.bash_history
+      - log_volume:/var/log
+volumes:
+  bash_history_volume: {}
+  log_volume: {}

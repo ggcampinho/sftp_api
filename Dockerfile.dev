@@ -1,0 +1,38 @@
+FROM elixir:1.14-alpine
+
+# App defaults
+ARG USER=sftp_api
+ENV APP_PATH=/home/$USER/app
+ENV APP_PORT=4000
+
+# Install basic utilities
+RUN apk update && \
+    apk --no-cache --update add \
+      make \
+      g++ \
+      bash \
+      curl \
+      inotify-tools && \
+    update-ca-certificates --fresh && \
+    rm -rf /var/cache/apk/*
+
+# Set default workdir, user and port
+RUN adduser -D $USER && \
+    mkdir -p $APP_PATH && \
+    chown $USER:$USER $APP_PATH
+
+WORKDIR $APP_PATH
+USER $USER:$USER
+EXPOSE $APP_PORT
+
+# Ensure latest versions of Hex/Rebar are installed on build
+RUN mix do local.hex --force, local.rebar --force
+
+# Copy files to image
+ADD --chown=$USER:$USER . .
+
+# Install Mix dependencies and compile
+RUN mix do deps.get, deps.compile
+
+# Run server as default
+CMD ["mix", "run", "--no-halt"]

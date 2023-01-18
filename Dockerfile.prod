@@ -1,0 +1,39 @@
+# Temporary Docker image with release dependencies
+FROM elixir:1.14-alpine AS builder
+
+# App defaults
+ENV APP_NAME=sftp_api
+ENV APP_PATH=/home/$APP_NAME/app
+ENV APP_RELEASE_PATH=/home/$APP_NAME/release
+ENV MIX_ENV=prod
+
+RUN mkdir -p $APP_PATH
+RUN mkdir -p $APP_RELEASE_PATH
+WORKDIR $APP_PATH
+
+# Copy files to image
+ADD . .
+
+# Compile and release build
+RUN mix do local.hex --force, local.rebar --force
+RUN mix deps.get --only prod
+RUN mix compile
+RUN mix release --path ${APP_RELEASE_PATH}
+
+# Final Docker image without release dependencies
+FROM alpine:3.16
+
+ENV APP_PATH=/app
+ENV APP_PORT=4000
+ENV APP=$APP_PATH/bin/sftp_api
+
+RUN mkdir -p $APP_PATH
+WORKDIR $APP_PATH
+
+RUN apk add --no-cache --update libstdc++ ncurses-libs
+
+EXPOSE $APP_PORT
+
+COPY --from=builder /home/sftp_api/release .
+
+CMD ${APP} start
