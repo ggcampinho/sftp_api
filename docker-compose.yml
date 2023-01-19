@@ -8,6 +8,8 @@ services:
       - "4000:4000"
     volumes:
       - .:/home/sftp_api/app
+      - ./config/sftp_system_dir:/home/sftp_api/ssh/system_dir
+      - ./config/sftp_user_dir:/home/sftp_api/ssh/user_dir
       - bash_history_volume:/home/sftp_api/.bash_history
       - log_volume:/var/log
 volumes:

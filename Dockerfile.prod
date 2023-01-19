@@ -23,9 +23,10 @@ RUN mix release --path ${APP_RELEASE_PATH}
 # Final Docker image without release dependencies
 FROM alpine:3.16
 
-ENV APP_PATH=/app
+ENV APP_NAME=sftp_api
+ENV APP_PATH=/home/$APP_NAME/app
 ENV APP_PORT=4000
-ENV APP=$APP_PATH/bin/sftp_api
+ENV APP_BIN=$APP_PATH/bin/sftp_api
 
 RUN mkdir -p $APP_PATH
 WORKDIR $APP_PATH
@@ -36,4 +37,4 @@ EXPOSE $APP_PORT
 
 COPY --from=builder /home/sftp_api/release .
 
-CMD ${APP} start
+CMD ${APP_BIN} start

@@ -5,11 +5,14 @@ defmodule SFTPAPI.Application do
 
   use Application
 
+  alias SFTPAPI.SFTPServer
+
   @impl true
   def start(_type, _args) do
-    children = []
+    children = [
+      {SFTPServer, []}
+    ]
 
-    IO.puts("Running")
     opts = [strategy: :one_for_one, name: SFTPAPI.Supervisor]
     Supervisor.start_link(children, opts)
   end
