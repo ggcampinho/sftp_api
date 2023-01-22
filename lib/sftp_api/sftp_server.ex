@@ -2,8 +2,11 @@ defmodule SFTPAPI.SFTPServer do
   @moduledoc """
   Implementation of the SFTP server to handle connections
 
-  The SFTP server uses `GenServer` to start a SSH daemon
-  accepting connections.
+  The SFTP server starts a (SSH daemon)[https://www.erlang.org/docs/21/man/ssh.html#daemon-1]
+  with a file handler implementing the behaviour `:ssh_sftpd_file_api`.
+
+  The server is started on the same process because the `:ssh` module
+  already starts the connections under their own supervision tree.
 
   > Note: The server requires some configuration automatically
   > generated [during setup](../../../README.md#installation).
@@ -25,87 +28,106 @@ defmodule SFTPAPI.SFTPServer do
         port: System.get_env("APP_PORT", "4000") |> String.to_integer()
   """
 
-  use GenServer
+  require Logger
 
-  @type start_opt ::
+  @typedoc """
+  A tuple containing a module handling the SFTP operations and the initial state.
+
+  The module should implement the behaviour `:ssh_sftpd_file_api`.
+  """
+  @type file_handler :: {module, init_state :: any}
+
+  @typedoc """
+  The options to configure the SFTP server.
+
+  Described in [server configuration](#module-server-configuration).
+  """
+  @type start_opts :: [
           {:name, GenServer.name()}
-          | {:port, integer}
+          | {:port, tcp_port :: integer}
           | {:server, boolean}
           | {:system_dir, Path.t()}
           | {:user_dir, Path.t()}
+        ]
 
-  @type start_opts :: [start_opt]
+  @typedoc """
+  The result of starting the SFTP server.
 
-  @type start_result :: :ignore | {:error, any} | {:ok, pid}
-
-  require Logger
+  If successful it returns `{:ok, pid, tcp_port}`, if it fails returns
+  `{:error, reason}`.
+  """
+  @type start_result :: {:ok, pid, tcp_port :: integer} | {:error, reason :: any}
 
   @default_port 0
-  @default_system_dir "/home/sftp_api/ssh/system_dir/#{Mix.env()}"
-  @default_user_dir "/home/sftp_api/ssh/user_dir/#{Mix.env()}"
+  @default_system_dir Path.absname("config/sftp_system_dir/#{Mix.env()}")
+  @default_user_dir Path.absname("config/sftp_user_dir/#{Mix.env()}")
 
-  defmodule Env do
+  defmodule Config do
     @moduledoc false
 
     defstruct port: nil,
+              server: nil,
               system_dir: nil,
-              user_dir: nil,
-              daemon_ref: nil
+              user_dir: nil
   end
 
-  # Client
-
   @doc """
-  Starts a process for the SFTP Server linked to the current process.
+  Starts a SSH daemon with a SFTP subsystem.
+
+  The `file_handler` is a module representing the SFTP subsystem, it
+  will be called every time a file operation happens.
 
   ## Options:
 
-    * `:name` - Name used to register the `GenServer`;
-    * Other options are described on the [server configuration](#module-server-configuration)
+    * Same as in [server configuration](#module-server-configuration)
   """
-  @spec start_link(start_opts()) :: start_result()
-  def start_link(opts) do
-    {opts, init_args} = Keyword.split(opts, [:name])
-    GenServer.start_link(__MODULE__, init_args, opts)
-  end
+  @spec start_daemon(file_handler) :: start_result
+  @spec start_daemon(file_handler, start_opts) :: start_result
+  def start_daemon(file_handler, opts \\ []) do
+    config = get_config(opts)
+    result = start_ssh_daemon(file_handler, config)
 
-  # Server (callbacks)
-
-  @impl true
-  def init(opts) do
-    opts = Keyword.merge(config(), opts)
-    server = Keyword.get(opts, :server, true)
-
-    env = %Env{
-      port: Keyword.get(opts, :port, @default_port),
-      system_dir: Keyword.get(opts, :system_dir, @default_system_dir),
-      user_dir: Keyword.get(opts, :user_dir, @default_user_dir)
-    }
-
-    case server do
-      true -> {:ok, env, {:continue, :ssh_daemon}}
-      false -> {:ok, env}
+    with {:ok, ref} <- result do
+      port = get_port(config.port, ref)
+      Logger.info("SFTP server listening on port #{port}")
+      {:ok, ref, port}
     end
   end
 
-  @impl true
-  def handle_continue(:ssh_daemon, env) do
+  defp get_config(opts) do
+    opts = Keyword.merge(config(), opts)
+
+    %Config{
+      port: Keyword.get(opts, :port, @default_port),
+      server: Keyword.get(opts, :server, true),
+      system_dir: Keyword.get(opts, :system_dir, @default_system_dir),
+      user_dir: Keyword.get(opts, :user_dir, @default_user_dir)
+    }
+  end
+
+  defp start_ssh_daemon(file_handler, config) do
+    cwd = File.cwd!() |> String.to_charlist()
+    system_dir = String.to_charlist(config.system_dir)
+    user_dir = String.to_charlist(config.user_dir)
+
+    sftpd_subsystem =
+      :ssh_sftpd.subsystem_spec(
+        cwd: cwd,
+        root: cwd,
+        file_handler: file_handler
+      )
+
     ssh_opts = [
       auth_methods: 'publickey',
-      system_dir: String.to_charlist(env.system_dir),
-      user_dir: String.to_charlist(env.user_dir),
-      ssh_cli: :no_cli,
+      system_dir: system_dir,
+      user_dir: user_dir,
+      subsystems: [sftpd_subsystem],
       connectfun: &connect_handler/3,
       disconnectfun: &disconnect_handler/1,
       failfun: &failed_auth_handler/3
     ]
 
-    {:ok, ref} = :ssh.daemon(env.port, ssh_opts)
-    port = get_port(env.port, ref)
-
-    Logger.info("SFTP server listening on port #{port}")
-
-    {:noreply, %Env{env | daemon_ref: ref, port: port}}
+    :ssh.daemon(config.port, ssh_opts)
   end
 
   @doc false

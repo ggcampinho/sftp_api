@@ -4,11 +4,11 @@ RELEASE_TAG := sftp_api/latest
 
 # It should match the target name
 SFTP_SYSTEM_DIR := ${MAKEFILE_DIR}config/sftp_system_dir
-SFTP_SYSTEM_DIR_VOLUME_OPTS := ${SFTP_SYSTEM_DIR}:/home/sftp_api/ssh/system_dir
+SFTP_SYSTEM_DIR_VOLUME_OPTS := ${SFTP_SYSTEM_DIR}/dev:/home/sftp_api/app/config/sftp_system_dir/prod
 
 # It should match the target name
 SFTP_USER_DIR := ${MAKEFILE_DIR}config/sftp_user_dir
-SFTP_USER_DIR_VOLUME_OPTS := ${SFTP_USER_DIR}:/home/sftp_api/ssh/user_dir
+SFTP_USER_DIR_VOLUME_OPTS := ${SFTP_USER_DIR}/dev:/home/sftp_api/app/config/sftp_user_dir/prod
 
 # clean: Clean all the setup
 .PHONY: clean
@@ -84,7 +84,7 @@ run-dev:
 # run-prod: Run the app inside the prod container tagged with $RELEASE_TAG
 .PHONY: run-prod
 run-prod:
-	@docker run -v ${SFTP_SYSTEM_DIR_VOLUME_OPTS} -v ${SFTP_USER_DIR_VOLUME_OPTS} ${RELEASE_TAG}
+	@docker run -p "4000:4000" -v ${SFTP_SYSTEM_DIR_VOLUME_OPTS} -v ${SFTP_USER_DIR_VOLUME_OPTS} ${RELEASE_TAG}
 
 # server: Executes `release` and `run-prod`
 .PHONY: server
