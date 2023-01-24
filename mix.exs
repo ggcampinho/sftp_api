@@ -6,6 +6,7 @@ defmodule SFTPAPI.MixProject do
       app: :sftp_api,
       version: "0.1.0",
       elixir: "~> 1.14",
+      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       docs: docs()
@@ -20,10 +21,16 @@ defmodule SFTPAPI.MixProject do
     ]
   end
 
+  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, "~> 0.29", only: :dev, runtime: false}
+      {:ecto_sql, "~> 3.9"},
+      {:ex_doc, "~> 0.29", only: :dev, runtime: false},
+      {:postgrex, ">= 0.0.0"}
     ]
   end
 

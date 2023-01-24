@@ -4,6 +4,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    environment:
+      DB_USERNAME: sftp_api
+      DB_PASSWORD: secret
+      DB_HOST: db
+    restart: always
     ports:
       - "4000:4000"
     volumes:
@@ -12,6 +17,17 @@ services:
       - ./config/sftp_user_dir:/home/sftp_api/ssh/user_dir
       - bash_history_volume:/home/sftp_api/.bash_history
       - log_volume:/var/log
+    depends_on:
+      - db
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: sftp_api
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - db_volume:/var/lib/postgresql/data
 volumes:
   bash_history_volume: {}
   log_volume: {}
+  db_volume: {}

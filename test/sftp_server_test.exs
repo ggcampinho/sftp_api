@@ -1,21 +1,25 @@
-defmodule SFTPServerTest do
-  use ExUnit.Case, async: true
+defmodule SFTPAPI.SFTPServerTest do
+  use SFTPAPI.DataCase
 
   alias SFTPAPI.SFTPServer
 
-  @file_handler {:ssh_sftpd_file, []}
+  @file_handler {SFTPAPI.FileAPI, []}
   @user_dir Path.absname("config/sftp_user_dir/test")
 
+  setup do
+    Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()})
+  end
+
   describe "start_daemon/1" do
-    test "starts a SSH server accepting connections" do
+    test "starts a SSH server accepting connections real" do
       assert {:ok, _daemon_ref, port} =
                SFTPServer.start_daemon(@file_handler, port: 0, server: true)
 
       assert {:ok, conn_ref} = ssh_connect(port)
       assert {:ok, channel_pid} = :ssh_sftp.start_channel(conn_ref)
 
-      assert {:ok, readme} = :ssh_sftp.read_file(channel_pid, "README.md")
-      assert readme =~ ~r/^# SFTP API/
+      assert :ok = :ssh_sftp.write_file(channel_pid, "test_result", "foobar")
+      assert {:ok, "foobar"} = :ssh_sftp.read_file(channel_pid, "test_result")
     end
   end
 
