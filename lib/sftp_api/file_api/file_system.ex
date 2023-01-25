@@ -23,22 +23,35 @@ defmodule SFTPAPI.FileAPI.FileSystem do
   Append the content to the end of the file's content and increases it's size,
   returning `:ok`.
 
-  If the file doesn't exist, it returns `{:error, :ebadf}`. If the operation
-  fails, it returns `{:error, :ebadf}`.
-  """
-  @spec write(id, content) :: :ok | {:error, :ebadf} | {:error, :enosys}
-  def write(id, content) do
-    with %DBFile{size: old_size, content: old_content} = db_file <- get_db_file(id) do
-      old_content = old_content || ""
-      new_content = old_content <> content
-      new_size = old_size + byte_size(content)
-      changeset = DBFile.changeset(db_file, %{content: new_content, size: new_size})
+  The functions uses the `OVERLAY` operation in SQL to decrease the memory
+  footprint, avoiding to get the full content of a huge file.
 
-      case Repo.update(changeset) do
-        {:ok, _db_file} -> :ok
-        _other -> {:error, :enosys}
-      end
-    else
+  If the file doesn't exist, it returns `{:error, :ebadf}`.
+  """
+  @spec write(id, content, offset) :: :ok | {:error, :ebadf} | {:error, :enosys}
+  def write(id, content, offset) do
+    query =
+      from(
+        file in DBFile,
+        where: file.id == ^id,
+        update: [
+          set: [
+            content:
+              fragment(
+                "OVERLAY(COALESCE(?, '') PLACING ? FROM ?)",
+                file.content,
+                ^content,
+                ^(offset + 1)
+              )
+          ],
+          inc: [
+            size: ^byte_size(content)
+          ]
+        ]
+      )
+
+    case Repo.update_all(query, []) do
+      {1, nil} -> :ok
       _other -> {:error, :ebadf}
     end
   end
@@ -62,8 +75,12 @@ defmodule SFTPAPI.FileAPI.FileSystem do
         file in DBFile,
         where: file.id == ^id,
         select:
-          {fragment("SUBSTRING(? FROM ? FOR ?)", file.content, ^offset, ^length),
-           file.size < ^offset}
+          {fragment(
+             "SUBSTRING(COALESCE(?, '') FROM ? FOR ?)",
+             file.content,
+             ^(offset + 1),
+             ^length
+           ), file.size < ^offset}
       )
 
     case Repo.all(query) do
@@ -169,10 +186,6 @@ defmodule SFTPAPI.FileAPI.FileSystem do
       %DBFile{} -> {:error, :eisdir}
       nil -> {:error, :enoent}
     end
-  end
-
-  defp get_db_file(id) do
-    Repo.get(DBFile, id)
   end
 
   defp get_db_file_by_path(path) do

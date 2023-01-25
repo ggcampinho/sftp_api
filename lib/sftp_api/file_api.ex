@@ -100,7 +100,8 @@ defmodule SFTPAPI.FileAPI do
 
   @impl true
   action write(io_device, data, state) do
-    {FileSystem.write(to_string(io_device), data), state}
+    offset = Keyword.get(state, :offset, 0)
+    {FileSystem.write(to_string(io_device), data, offset), state}
   end
 
   @impl true

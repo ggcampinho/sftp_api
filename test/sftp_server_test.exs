@@ -5,6 +5,7 @@ defmodule SFTPAPI.SFTPServerTest do
 
   @file_handler {SFTPAPI.FileAPI, []}
   @user_dir Path.absname("config/sftp_user_dir/test")
+  @large_file_path "test/fixture/large_file.csv"
 
   setup do
     Ecto.Adapters.SQL.Sandbox.mode(Repo, {:shared, self()})
@@ -18,8 +19,20 @@ defmodule SFTPAPI.SFTPServerTest do
       assert {:ok, conn_ref} = ssh_connect(port)
       assert {:ok, channel_pid} = :ssh_sftp.start_channel(conn_ref)
 
-      assert :ok = :ssh_sftp.write_file(channel_pid, "test_result", "foobar")
-      assert {:ok, "foobar"} = :ssh_sftp.read_file(channel_pid, "test_result")
+      assert :ok = :ssh_sftp.write_file(channel_pid, "test_file", "foobar")
+      assert {:ok, "foobar"} = :ssh_sftp.read_file(channel_pid, "test_file")
+    end
+
+    test "handles large files" do
+      assert {:ok, _daemon_ref, port} =
+               SFTPServer.start_daemon(@file_handler, port: 0, server: true)
+
+      assert {:ok, conn_ref} = ssh_connect(port)
+      assert {:ok, channel_pid} = :ssh_sftp.start_channel(conn_ref)
+
+      large_file = File.read!(@large_file_path)
+      assert :ok = :ssh_sftp.write_file(channel_pid, "test_file", large_file)
+      assert {:ok, ^large_file} = :ssh_sftp.read_file(channel_pid, "test_file")
     end
   end
 
