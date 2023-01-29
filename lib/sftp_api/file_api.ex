@@ -26,12 +26,12 @@ defmodule SFTPAPI.FileAPI do
 
   @impl true
   action delete(path, state) do
-    {{:error, :enotsup}, state}
+    {FileSystem.delete(path_without_cwd(path)), state}
   end
 
   @impl true
   action del_dir(path, state) do
-    {{:error, :enotsup}, state}
+    {FileSystem.delete_dir(path_without_cwd(path)), state}
   end
 
   @impl true
@@ -41,17 +41,17 @@ defmodule SFTPAPI.FileAPI do
 
   @impl true
   action is_dir(abs_path, state) do
-    {FileSystem.dir?(path_relative_to_cwd(abs_path)), state}
+    {FileSystem.dir?(path_without_cwd(abs_path)), state}
   end
 
   @impl true
-  action list_dir(_abs_path, state) do
-    {{:error, :enotsup}, state}
+  action list_dir(abs_path, state) do
+    {FileSystem.list_dir(path_without_cwd(abs_path)), state}
   end
 
   @impl true
-  action make_dir(_dir, state) do
-    {{:error, :enotsup}, state}
+  action make_dir(path, state) do
+    {FileSystem.make_dir(path_without_cwd(path)), state}
   end
 
   @impl true
@@ -61,7 +61,7 @@ defmodule SFTPAPI.FileAPI do
 
   @impl true
   action open(abs_path, flags, state) do
-    {FileSystem.open(path_relative_to_cwd(abs_path), flags), state}
+    {FileSystem.open(path_without_cwd(abs_path), flags), state}
   end
 
   @impl true
@@ -79,18 +79,18 @@ defmodule SFTPAPI.FileAPI do
   end
 
   @impl true
-  action read_link(_path, state) do
-    {{:error, :enotsup}, state}
+  action read_link(path, state) do
+    {FileSystem.read_link(path_without_cwd(path)), state}
   end
 
   @impl true
-  action read_link_info(_path, state) do
-    {{:error, :enotsup}, state}
+  action read_link_info(path, state) do
+    {FileSystem.read_file_info(path_without_cwd(path)), state}
   end
 
   @impl true
   action read_file_info(path, state) do
-    {{:error, :enotsup}, state}
+    {FileSystem.read_file_info(path_without_cwd(path)), state}
   end
 
   @impl true

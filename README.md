@@ -45,7 +45,25 @@ make run
 You should be able to connect using in another terminal:
 
 ```bash
-ssh localhost -p 4000
+sftp -oPort=4000 localhost
+```
+
+Now, you can play with the SFTP server
+```
+Connected to localhost.
+sftp> ls
+sftp> put README.md foo.bar
+Uploading README.md to /foo.bar
+README.md                                           100% 1783   641.3KB/s   00:00    
+sftp> mkdir baz/bar
+sftp> ls
+baz      foo.bar  
+sftp> rmdir baz
+sftp> ls
+foo.bar  
+sftp> get foo.bar README-2.md
+Fetching /foo.bar to README-2.md
+foo.bar
 ```
 
 ## Releasing to production

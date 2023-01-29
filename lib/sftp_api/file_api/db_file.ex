@@ -13,7 +13,11 @@ defmodule SFTPAPI.FileAPI.DBFile do
           path: path,
           content: content | nil,
           is_dir: boolean,
-          size: integer
+          size: integer,
+          parent_id: id,
+          parent: t,
+          inserted_at: DateTime.t(),
+          updated_at: DateTime.t()
         }
 
   @type params :: %{
@@ -28,6 +32,10 @@ defmodule SFTPAPI.FileAPI.DBFile do
     field(:content, :binary)
     field(:is_dir, :boolean, default: false)
     field(:size, :integer, default: 0)
+
+    belongs_to(:parent, __MODULE__)
+
+    timestamps()
   end
 
   @doc """
@@ -39,7 +47,7 @@ defmodule SFTPAPI.FileAPI.DBFile do
   @spec changeset(t, params) :: Ecto.Changeset.t(t)
   def changeset(db_file, params \\ %{}) do
     db_file
-    |> Ecto.Changeset.cast(params, [:path, :content, :is_dir, :size])
+    |> Ecto.Changeset.cast(params, [:path, :content, :is_dir, :size, :parent_id])
     |> Ecto.Changeset.validate_required([:path, :is_dir, :size])
     |> Ecto.Changeset.unique_constraint([:path])
   end

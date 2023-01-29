@@ -111,4 +111,16 @@ defmodule SFTPAPI.FileAPI.Handler do
     path = abs_path |> to_string() |> Path.relative_to_cwd()
     Path.join("/", path)
   end
+
+  def path_without_cwd(abs_path) do
+    path_without_cwd(Path.split(abs_path), Path.split(File.cwd!()))
+  end
+
+  defp path_without_cwd([dir | rest1], [dir | rest2]) do
+    path_without_cwd(rest1, rest2)
+  end
+
+  defp path_without_cwd(path, _cwd) do
+    Path.join(["/"] ++ path)
+  end
 end
