@@ -103,15 +103,10 @@ defmodule SFTPAPI.FileAPI.Handler do
 
       iex> File.cwd!()
       "/home/sftp_api/app"
-      iex> SFTPAPI.FileAPI.Handler.path_relative_to_cwd('/home/sftp_api/app/foo')
+      iex> SFTPAPI.FileAPI.Handler.path_without_cwd('/home/sftp_api/app/foo')
       "/foo"
   """
-  @spec path_relative_to_cwd(charlist) :: Path.t()
-  def path_relative_to_cwd(abs_path) do
-    path = abs_path |> to_string() |> Path.relative_to_cwd()
-    Path.join("/", path)
-  end
-
+  @spec path_without_cwd(charlist) :: Path.t()
   def path_without_cwd(abs_path) do
     path_without_cwd(Path.split(abs_path), Path.split(File.cwd!()))
   end

@@ -53,14 +53,14 @@ defmodule SFTPAPI.FileAPI.HandlerTest do
     end
   end
 
-  describe "path_relative_to_cwd/1" do
+  describe "path_without_cwd/1" do
     test "makes the path relative to the cwd" do
       {:ok, cwd} = :file.get_cwd()
 
-      assert "/foo" = Handler.path_relative_to_cwd(cwd ++ '/foo')
-      assert "/foo/bar" = Handler.path_relative_to_cwd(cwd ++ '/foo/bar')
+      assert "/foo" = Handler.path_without_cwd(cwd ++ '/foo')
+      assert "/foo/bar" = Handler.path_without_cwd(cwd ++ '/foo/bar')
 
-      assert "/foo" = Handler.path_relative_to_cwd('/foo')
+      assert "/foo" = Handler.path_without_cwd('/foo')
     end
   end
 end
