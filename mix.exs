@@ -8,6 +8,7 @@ defmodule SFTPAPI.MixProject do
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      aliases: aliases(),
       deps: deps(),
       docs: docs()
     ]
@@ -31,6 +32,12 @@ defmodule SFTPAPI.MixProject do
       {:ecto_sql, "~> 3.9"},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:postgrex, ">= 0.0.0"}
+    ]
+  end
+
+  defp aliases do
+    [
+      server: ["ecto.create", "ecto.migrate", "run --no-halt"]
     ]
   end
 

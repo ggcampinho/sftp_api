@@ -32,7 +32,7 @@ RUN mix do local.hex --force, local.rebar --force
 ADD --chown=$USER:$USER . .
 
 # Install Mix dependencies and compile
-RUN mix do deps.get, deps.compile, ecto.create, ecto.migrate
+RUN mix do deps.get, deps.compile
 
 # Run server as default
-CMD ["mix", "run", "--no-halt"]
+CMD ["mix", "server"]
