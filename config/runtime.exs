@@ -1,7 +1,7 @@
 import Config
 
 config :sftp_api, SFTPAPI.Repo,
-  database: System.get_env("DB_NAME", "sftp_api"),
+  database: System.get_env("DB_NAME", "sftp_api_#{Mix.env()}"),
   username: System.get_env("DB_USERNAME", "sftp_api"),
   password: System.get_env("DB_PASSWORD"),
   hostname: System.get_env("DB_HOST")

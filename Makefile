@@ -59,7 +59,13 @@ config/sftp_user_dir:
 
 # setup: Executes `config/sftp_system_dir`, `config/sftp_user_dir` and `build`
 .PHONY: setup
-setup: config/sftp_system_dir config/sftp_user_dir build
+setup: config/sftp_system_dir config/sftp_user_dir build migrate
+
+# migrate: Creates and migrates the database
+.PHONY: migrate
+migrate:
+	@docker-compose run --rm sftp_api mix do ecto.create, ecto.migrate
+	@docker-compose run -e MIX_ENV=test --rm sftp_api mix do ecto.create, ecto.migrate
 
 # build: Builds the application container in dev mode
 .PHONY: build

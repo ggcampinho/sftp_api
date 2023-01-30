@@ -35,4 +35,4 @@ ADD --chown=$USER:$USER . .
 RUN mix do deps.get, deps.compile
 
 # Run server as default
-CMD ["mix", "server"]
+CMD ["mix", "run", "--no-halt"]
